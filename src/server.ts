@@ -78,6 +78,45 @@ app.post('/api/users/login', async (req, res) => {
   }
 });
 
+// Create a new whiteboard
+app.post('/api/whiteboards', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { name } = req.body;
+    const creatorId = req.user!.userId; // We know user exists because of authMiddleware
+
+    if (!name) {
+      return res.status(400).json({ message: 'Whiteboard name is required' });
+    }
+
+    const newWhiteboard = await pool.query(
+      'INSERT INTO whiteboards (name, creator_id) VALUES ($1, $2) RETURNING *',
+      [name, creatorId]
+    );
+
+    res.status(201).json(newWhiteboard.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all whiteboards for the logged-in user
+app.get('/api/whiteboards', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const creatorId = req.user!.userId;
+
+    const whiteboards = await pool.query(
+      'SELECT * FROM whiteboards WHERE creator_id = $1 ORDER BY created_at DESC',
+      [creatorId]
+    );
+
+    res.json(whiteboards.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // A protected route to get the current user's profile
 app.get('/api/profile', authMiddleware, (req: AuthenticatedRequest, res) => {
   // The authMiddleware has already verified the user and attached the payload
