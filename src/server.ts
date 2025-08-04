@@ -1,3 +1,4 @@
+import { authMiddleware, AuthenticatedRequest } from './middleware/auth';
 import jwt from 'jsonwebtoken';
 import express from 'express';
 import pool from './db';
@@ -76,6 +77,16 @@ app.post('/api/users/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// A protected route to get the current user's profile
+app.get('/api/profile', authMiddleware, (req: AuthenticatedRequest, res) => {
+  // The authMiddleware has already verified the user and attached the payload
+  res.json({
+    message: 'Successfully accessed protected route',
+    user: req.user
+  });
+});
+
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
